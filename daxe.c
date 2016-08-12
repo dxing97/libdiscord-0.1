@@ -3,7 +3,7 @@
 //
 
 #include <stdio.h>
-#include <curl/curl.h>
+//#include <curl/curl.h>
 
 int main() {
     printf("Hello world!");
