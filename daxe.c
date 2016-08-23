@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <libwebsockets.h>
+#include <curl/curl.h>
 
 int main() {
     printf("Daxe");
