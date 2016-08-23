@@ -3,9 +3,25 @@
 //
 
 #include <stdio.h>
-//#include <curl/curl.h>
+#include <string.h>
+#include <curl/curl.h>
 
 int main() {
-    printf("Hello world!");
+    printf("Daxe");
+    CURL *curl;
+    //CURLcode res;
+
+    curl = curl_easy_init();
+
+    if (curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, "http://discordapp.com/");
+
+        curl_easy_perform(curl);
+
+        curl_easy_cleanup(curl);
+    }
+
+
+    //curl_easy_cleanup();
     return 0;
 }
