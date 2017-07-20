@@ -1,4 +1,4 @@
-# Daxe
-General chat and utility bot for Xingworks and others. Written in C (hopefully). Written by a noob, so use at your own risk. 
+# About
+A Discord library written in C, currently in development. 
 
 Contains symbiotic slug.
