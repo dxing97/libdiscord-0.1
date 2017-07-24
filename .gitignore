@@ -2,3 +2,5 @@
 .idea/.name
 .idea/workspace.xml
 cmake-build-debug/
+test.c
+test-echo2.c

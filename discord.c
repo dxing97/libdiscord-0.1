@@ -16,7 +16,7 @@ static int force_exit = 0, state = 0; //state - 0 - not connected
 const char DISCORD_BASE_URL[] = "https://discordapp.com/api/v6";
 const int port = 443; //WSS/HTTPS default port
 #define URL_PARAMETERS "/?v=6&encoding=json"
-const char bot_token[] = "MjEzMDg0NzIyMTIzNzY3ODA5.DEgfXA.Xrd6EodEEqefOvVVYJVuDsz7RYo";
+const char bot_token[] = "MzM5MTg5MjkwMjIxMTc0Nzg0.DFgWNg.Ky2suLepztcTPReFUXaw93aoPOs";
 
 struct per_session_data_discord *psd;
 
@@ -328,7 +328,7 @@ int main (int argc, char **argv[] ) {
     struct _u_response response;    //HTTP response information
     char *uri = "/gateway/bot";
     //need to specify Discord gateway version and encoding (JSON)
-    char botToken[] = "Bot MjEzMDg0NzIyMTIzNzY3ODA5.DEgfXA.Xrd6EodEEqefOvVVYJVuDsz7RYo";
+    char botToken[] = "Bot MzM5MTg5MjkwMjIxMTc0Nzg0.DFgWNg.Ky2suLepztcTPReFUXaw93aoPOs";
 
     char url_prefix[strlen(DISCORD_BASE_URL) + strlen(uri)]; //URI to be queried
     strcpy(url_prefix, DISCORD_BASE_URL);
@@ -498,7 +498,7 @@ int main (int argc, char **argv[] ) {
             if (!wsi) {
                 fprintf(stderr, "failed to connect to %s:%u\n", websocket_url, port);
             }
-            ((struct per_session_data__discord *)(lws_get_protocol(wsi)->user))->token = bot_token;
+//            ((struct per_session_data__discord *)(lws_get_protocol(wsi)->user))->token = bot_token;
             
         }
 
