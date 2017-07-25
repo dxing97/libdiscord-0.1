@@ -5,16 +5,14 @@ else
     echo Detected unsupported distribution! Continue? \(y/n\):
     read CONT
     if [ $CONT=y ]; then
-	echo continuing
+	    echo continuing
     else if [$CONT=n ]; then
 	     echo exiting
 	     exit
-	 else
+    else
 	     echo not an option, exiting
 	     exit
-	 fi
     fi
-    
 fi
 
 exit

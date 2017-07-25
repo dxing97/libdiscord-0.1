@@ -71,6 +71,7 @@ struct ld_sessiondata {
     enum ld_ws_state ws_state;
     struct ld_wsdata *wsd;
     int last_seq_num;
+    int heartbeat_interval;
 
 };
 

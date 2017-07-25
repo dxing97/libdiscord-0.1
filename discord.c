@@ -29,6 +29,12 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
     int i = 0;
 
     switch (reason) { //why was the callback made?
+        case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE:
+            printf("peer initiated close, len: %lu\n", (unsigned long) len);
+            for(i = 0; i < (int) len; i++) {
+                printf(" %d: 0x%02X\n", i, ((unsigned int *)in)[i]);
+            }
+            break;
         case LWS_CALLBACK_CLOSED:
         case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
             if (in != NULL) {
@@ -137,10 +143,11 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 
 int main (int argc, char **argv[] ) {
 
-    int pid;
+    int pid = 1;
 
     memset(&sd, 0, sizeof(sd));
     sd.bot_token = (char *) malloc(64*sizeof(char));
+
     printf("enter bot token:");
     fscanf(stdin, "%s", sd.bot_token);
     printf("%s\n", sd.bot_token);
@@ -162,7 +169,6 @@ int main (int argc, char **argv[] ) {
     sd.gateway_url = strdup(gateway_url);
 
     int debug_level =63,
-        n = 0,
         syslog_options = LOG_PID | LOG_PERROR;
     struct lws_context                  *context;
     struct lws_client_connect_info      *i;
@@ -180,7 +186,7 @@ int main (int argc, char **argv[] ) {
 
     signal(SIGINT, sighandler);
 
-    while (n >= 0 && !force_exit ) {
+    while (!force_exit ) {
         if (sd.ws_state == 0) {
             sd.ws_state = LD_WSSTATE_CONNECTING;
             lwsl_notice("connecting to %s\n", gateway_url);
@@ -197,7 +203,7 @@ int main (int argc, char **argv[] ) {
             
         }
         //callback here?
-        pid = fork();//DO NOT FORK HERE IN THE LOOP. THAT IS A BAD IDEA.
+//        pid = fork();//DO NOT FORK HERE IN THE LOOP. THAT IS A BAD IDEA.
 
         if (pid == 0) {
             //this is the child
