@@ -20,10 +20,10 @@ fi
 exit
 	 
 sudo apt update && sudo apt upgrade
-sudo apt install checkinstall libmicrohttpd-dev libjansson-dev libcurl4-gnutls-dev libgnutls28-dev libgcrypt20-dev git make cmake gcc libssl-dev 
+sudo apt install checkinstall libmicrohttpd-dev libjansson-dev libcurl4-gnutls-dev libgnutls28-dev libgcrypt20-dev git make cmake gcc libssl-dev libuv-dev
 cd ~/
 
-#install ulfius
+#build from source and install ulfius and dependencies
 git clone https://github.com/babelouest/ulfius.git
 cd ulfius/
 git submodule update --init
@@ -36,7 +36,7 @@ make
 sudo checkinstall
 cd ..
 
-#install libwebsockets
+#build from source and install libwebsockets
 git clone https://github.com/warmcat/libwebsockets
 cd libwebsockets
 mkdir build
