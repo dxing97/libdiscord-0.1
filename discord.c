@@ -32,8 +32,9 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
         case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE:
             printf("peer initiated close, len: %lu\n", (unsigned long) len);
             for(i = 0; i < (int) len; i++) {
-                printf(" %d: 0x%02X\n", i, ((unsigned int *)in)[i]);
+                printf(" %d: 0x%02X\n", i, (( unsigned char *)in)[i]);
             }
+            printf("close code: %u\n", (( unsigned char *)in)[0] << 8 | (( unsigned char *)in)[1]);
             break;
         case LWS_CALLBACK_CLOSED:
         case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
@@ -47,8 +48,6 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
             break;
         case LWS_CALLBACK_CLIENT_ESTABLISHED:
             printf("Client has connected\n");
-            sd.wsd->index = 0;
-            sd.wsd->len = -1;
             sd.ws_state = LD_WSSTATE_CONNECTED_NOT_IDENTIFIED; //connected
             break;
         case LWS_CALLBACK_CLIENT_RECEIVE: //recieved something from discord
@@ -58,7 +57,8 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 
             switch (sd.wsd->opcode) {
                 case LD_OPCODE_DISPATCH:
-                    printf("recieved opcode DISPATCH\n");
+                    sd.last_seq_num = ld_payload_dispatch_get_seqnum(in);
+                    printf("recieved opcode DISPATCH with seqnum %d\n", sd.last_seq_num);
                     break;
                 case LD_OPCODE_HEARTBEAT:
                     printf("recieved opcode HEARTBEAT(?)\n");
@@ -72,6 +72,10 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
                 case LD_OPCODE_HELLO:
                     printf("recieved opcode HELLO, creating IDENTIFY payload\n");
                     //immediately send identify payload and begin sending heartbeats
+
+                    //get the heartbeat interval
+                    sd.heartbeat_interval = ld_payload_hello_get_hb_interval(in);
+
                     //create identify payload
                     i = sprintf((char *) &(sd.wsd->buf[LWS_PRE]), json_dumps(ld_create_payload_identify(&sd), 0));
                     if(i <= 0) {
@@ -91,12 +95,33 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
                         printf("recieved impossible opcode %d\n", sd.wsd->opcode);
                     }
                     return -1;
-                    break;
             }
 
             break;
         case LWS_CALLBACK_CLIENT_WRITEABLE:
             printf("CLIENT_WRITABLE callback\n");
+            if (sd.ws_state == LD_WSSTATE_SENDING_HEARTBEAT) {
+                printf("sending heartbeat\n");
+                i = sprintf((char *) &(sd.wsd->buf[LWS_PRE]), json_dumps(ld_create_payload_heartbeat(sd.last_seq_num), 0));
+                if(i <= 0) {
+                    fprintf(stderr, "couldn't write JSON payload to buffer");
+                    return -1;
+                }
+                sd.wsd->len = (unsigned) i;
+
+                lwsl_notice("TX: %s\n", &sd.wsd->buf[LWS_PRE]);
+                i = lws_write(wsi, &(sd.wsd->buf[LWS_PRE]), sd.wsd->len, LWS_WRITE_TEXT);
+                if(i < 0) {
+                    lwsl_err("ERROR %d writing to socket, hanging up\n", i);
+                    return -1;
+                }
+                if(i < (int)sd.wsd->len) {
+                    lwsl_err("Partial write\n");
+                    return -1;
+                }
+                sd.ws_state = LD_WSSTATE_CONNECTED_IDENTIFIED;
+                break;
+            }
             lwsl_notice("TX: %s\n", &sd.wsd->buf[LWS_PRE]);
             i = lws_write(wsi, &(sd.wsd->buf[LWS_PRE]), sd.wsd->len, LWS_WRITE_TEXT);
             if(i < 0) {
@@ -118,32 +143,11 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 
 }
 
-//struct lws_protocols protocols[] = { //array of protocols that can be used
-//	/* first protocol must always be HTTP handler */
-//
-//	{
-//		"Discordv6",		/* name of the protocol- can be overridden with -e */
-//		callback_discord, //the callback function for this protocol
-//		sizeof(struct ld_wsdata),
-//		/* per_session_data_size - total memory allocated for a connection, allocated on connection establishment and freed on connection takedown */
-//		//note that this memory is given to the callback to work with
-//		MAX_DISCORD_PAYLOAD, //rx_buffer_size - space for rx data (duh)
-//		//id (unsigned int), - ignored by lws, can be used by user code for things like protocol version
-//		//user (void *), - ignored by lws, can be used by user code for things and stuff
-//		//tx_packet_size - 	space for tx data (duh)
-//						//	0 means set it to the same size as rx_buffer_size,
-//						//	otherwise tx data is sent in chunks of this size, which can be undesireable, so make sure the size is appropriate
-//
-//	},
-//	{
-//		NULL, NULL, 0		/* End of list */
-//	}
-//};
-
-
 int main (int argc, char **argv[] ) {
 
     int pid = 1;
+
+    struct timeval tv; //for heartbeat loop
 
     memset(&sd, 0, sizeof(sd));
     sd.bot_token = (char *) malloc(64*sizeof(char));
@@ -186,7 +190,14 @@ int main (int argc, char **argv[] ) {
 
     signal(SIGINT, sighandler);
 
-    while (!force_exit ) {
+    if(gettimeofday(&tv, NULL) == -1) {
+        perror("can't get the time");
+        goto bail;
+    }
+
+
+
+    while (!force_exit) {
         if (sd.ws_state == 0) {
             sd.ws_state = LD_WSSTATE_CONNECTING;
             lwsl_notice("connecting to %s\n", gateway_url);
@@ -199,21 +210,23 @@ int main (int argc, char **argv[] ) {
                 fprintf(stderr, "failed to connect to %s\n", gateway_url);
                 goto bail;
             }
-//            ((struct ld_wsdata *)(lws_get_protocol(wsi)->user))->token = bot_token;
-            
+            sd.last_heartbeat = (int) tv.tv_sec * 1000 + (int) tv.tv_usec / 1000;
+            sd.heartbeat_interval = 1000; //wait 5 seconds after connecting to the gateway before sending the first heartbeat
         }
-        //callback here?
-//        pid = fork();//DO NOT FORK HERE IN THE LOOP. THAT IS A BAD IDEA.
+        if(sd.heartbeat_interval > 0) {//do we have an interval to work with?
+            gettimeofday(&tv, NULL);
+            if(((int) tv.tv_sec * 1000 + (int) tv.tv_usec / 1000) -
+                       (sd.last_heartbeat) > sd.heartbeat_interval) {
+                //send a heartpeat payload
+                //set the sd to sending_heartbeat
+                sd.ws_state = LD_WSSTATE_SENDING_HEARTBEAT;
+                sd.last_heartbeat = (int) tv.tv_sec * 1000 + (int) tv.tv_usec / 1000;
 
-        if (pid == 0) {
-            //this is the child
-
-        } else {
-            //this is the parent, the child process as a PID of pid
-            lws_service(context, 20000);
+                lws_callback_on_writable(wsi);
+            }
         }
 
-
+        lws_service(context, 10);
     }
 
 bail:

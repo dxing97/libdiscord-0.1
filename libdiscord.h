@@ -17,7 +17,7 @@
 
 #endif
 
-#include <zlib.h>
+#include <sys/time.h>
 
 #include "libdiscordConfig.h"
 
@@ -31,7 +31,8 @@ enum ld_ws_state {
     LD_WSSTATE_NOT_CONNECTED = 0,
     LD_WSSTATE_CONNECTING = 1,
     LD_WSSTATE_CONNECTED_NOT_IDENTIFIED = 2,
-    LD_WSSTATE_CONNECTED_IDENTIFIED = 3
+    LD_WSSTATE_CONNECTED_IDENTIFIED = 3,
+    LD_WSSTATE_SENDING_HEARTBEAT = 4
 };
 
 enum ld_opcode {
@@ -72,6 +73,7 @@ struct ld_sessiondata {
     struct ld_wsdata *wsd;
     int last_seq_num;
     int heartbeat_interval;
+    int last_heartbeat;
 
 };
 
@@ -111,9 +113,14 @@ enum ld_opcode ld_payloadstr_get_opcode(char *payload);
  * extremely similar to ld_payloadbuf_get_opcode
  */
 
+
 /*
- * create a lws context based on default discord settings
+ * takes the HELLO payload and retrieves the heartbeat_interval value
  */
+int ld_payload_hello_get_hb_interval(const char *payload);
+
+int ld_payload_dispatch_get_seqnum(const char *payload);
+
 struct lws_context * ld_create_lws_context();
 
 /*
@@ -146,7 +153,7 @@ json_t * ld_create_payload_identify(struct ld_sessiondata *sd);
  * creates a identify payload based on a bot token
  */
 
-json_t * ld_create_payload_heartbeat(int * sequence_number);
+json_t * ld_create_payload_heartbeat(int sequence_number);
 /*
  * creates a heartbeat payload using a sequence number
  * note that the sequence number can be null.

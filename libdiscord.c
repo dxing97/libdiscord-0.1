@@ -129,6 +129,39 @@ enum ld_opcode ld_payloadstr_get_opcode(char *payload) { //for null-terminated s
     return ld_payloadbuf_get_opcode(payload, strlen(payload));
 }
 
+int ld_payload_hello_get_hb_interval(const char *payload) {
+    json_t *decoded_payload, *data, *heartbeat_interval;
+    json_error_t error;
+
+    decoded_payload = json_loads(payload, 0, &error);
+
+    data = json_object_get(decoded_payload, "d");
+    if(data == NULL) {
+        fprintf(stderr, "couldn't get heartbeat interval from HELLO: couldn't find d key");
+        return -1;
+    }
+
+    heartbeat_interval = json_object_get(data, "heartbeat_interval");
+
+    return (int) json_integer_value(heartbeat_interval);
+}
+
+int ld_payload_dispatch_get_seqnum(const char *payload) {
+    int intval;
+    json_t *decoded_payload, *seqnum;
+    json_error_t error;
+
+    decoded_payload = json_loads(payload, 0, &error);
+
+    seqnum = json_object_get(decoded_payload, "s");
+    if(seqnum == NULL) {
+        fprintf(stderr, "couldn't get sequence number from DISPATCH: couldn't find s key");
+        return -1;
+    }
+
+    return (int) json_integer_value(seqnum);
+}
+
 json_t* ld_create_payload_identify(struct ld_sessiondata *sd) {
     json_t *payload, *data, *properties, *presence, *game;
     char lv[128];
@@ -313,4 +346,20 @@ struct lws_client_connect_info *ld_create_lws_connect_info(struct lws_context *c
     i->protocol = protocols[0].name;
 
     return i;
+}
+
+json_t * ld_create_payload_heartbeat(int sequence_number) {
+    json_t *payload;
+    json_error_t error;
+
+    payload = json_object();
+    if(payload == NULL) {
+        fprintf(stderr, "couldn't create payload JSON object for HEARTBEAT payload");
+        return NULL;
+    }
+
+    json_object_set_new(payload, "op", json_integer(LD_OPCODE_HEARTBEAT));
+    json_object_set_new(payload, "d", json_integer(sequence_number));
+
+    return payload;
 }
