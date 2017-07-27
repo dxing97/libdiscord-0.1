@@ -19,7 +19,7 @@ set(CMAKE_C_STANDARD 99)
 set(SOURCE_FILES
         discord.c
 #        test.c
-        libdiscord.h libdiscord.c libdiscordConfig.h.in)
+        libdiscord.h libdiscord.c libdiscordConfig.h.in html.c html.h websockets.c websockets.h json.c json.h)
 add_executable(libdiscord ${SOURCE_FILES})
 #add_executable(testecho test-echo2.c)
 target_link_libraries(libdiscord ${LIBS})

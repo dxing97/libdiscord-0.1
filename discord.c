@@ -135,8 +135,8 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
             break;
 
         default:
-            if(reason != LWS_CALLBACK_GET_THREAD_ID)
-            printf("unused callback: %d\n", reason);
+//            if(reason != LWS_CALLBACK_GET_THREAD_ID)
+//            printf("unused callback: %d\n", reason);
             break;
     }
     return 0;
@@ -144,9 +144,6 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 }
 
 int main (int argc, char **argv[] ) {
-
-    int pid = 1;
-
     struct timeval tv; //for heartbeat loop
 
     memset(&sd, 0, sizeof(sd));
@@ -210,17 +207,22 @@ int main (int argc, char **argv[] ) {
                 fprintf(stderr, "failed to connect to %s\n", gateway_url);
                 goto bail;
             }
-            sd.last_heartbeat = (int) tv.tv_sec * 1000 + (int) tv.tv_usec / 1000;
-            sd.heartbeat_interval = 1000; //wait 5 seconds after connecting to the gateway before sending the first heartbeat
+            sd.last_heartbeat = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+            sd.heartbeat_interval = 5000; //wait 5 seconds after connecting to the gateway before sending the first heartbeat
         }
-        if(sd.heartbeat_interval > 0) {//do we have an interval to work with?
+        if(sd.ws_state == LD_WSSTATE_CONNECTED_IDENTIFIED) {
             gettimeofday(&tv, NULL);
-            if(((int) tv.tv_sec * 1000 + (int) tv.tv_usec / 1000) -
-                       (sd.last_heartbeat) > sd.heartbeat_interval) {
+            if (sd.first_heartbeat == 0) {
+                sd.ws_state = LD_WSSTATE_SENDING_HEARTBEAT;
+                sd.last_heartbeat =  tv.tv_sec * 1000 + tv.tv_usec / 1000;
+                sd.first_heartbeat = 1;
+                lws_callback_on_writable(wsi);
+            }
+            if(( tv.tv_sec * 1000 + tv.tv_usec / 1000) - (sd.last_heartbeat) > sd.heartbeat_interval ) {
                 //send a heartpeat payload
                 //set the sd to sending_heartbeat
                 sd.ws_state = LD_WSSTATE_SENDING_HEARTBEAT;
-                sd.last_heartbeat = (int) tv.tv_sec * 1000 + (int) tv.tv_usec / 1000;
+                sd.last_heartbeat =  tv.tv_sec * 1000 + tv.tv_usec / 1000;
 
                 lws_callback_on_writable(wsi);
             }

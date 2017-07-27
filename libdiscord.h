@@ -21,6 +21,10 @@
 
 #include "libdiscordConfig.h"
 
+#include "html.h"
+#include "json.h"
+#include "websockets.h"
+
 #define MAX_DISCORD_PAYLOAD 4096
 
 #define LD_BASE_URL "https://discordapp.com/api/v6"
@@ -56,15 +60,6 @@ int
 callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user,
                  void *in, size_t len);
 
-
-
-/*
- * context required for opening and maintaining a websocket to discord
- *
- * gateway_url: the string containing the URL to connect to, get it from ld_get_gateway or ld_get_gateway_bot
- *      example: wss://gateway.discord.gg
- */
-
 struct ld_sessiondata {
     char *bot_token;
     char *current_game;
@@ -72,8 +67,9 @@ struct ld_sessiondata {
     enum ld_ws_state ws_state;
     struct ld_wsdata *wsd;
     int last_seq_num;
-    int heartbeat_interval;
-    int last_heartbeat;
+    long heartbeat_interval;
+    long last_heartbeat;
+    int first_heartbeat;
 
 };
 
@@ -121,7 +117,7 @@ int ld_payload_hello_get_hb_interval(const char *payload);
 
 int ld_payload_dispatch_get_seqnum(const char *payload);
 
-struct lws_context * ld_create_lws_context();
+
 
 /*
  * create a lws client connect info struct based on defaults and parameters
@@ -168,4 +164,3 @@ json_t * ld_create_payload_resume ();
 json_t * ld_create_payload_request_members();
 
 json_t * ld_create_payload_guild_sync();
-
