@@ -5,17 +5,9 @@
 #ifndef LIBDISCORD_DISCORD_H
 #define LIBDISCORD_DISCORD_H
 
-#endif //LIBDISCORD_DISCORD_H
-
-#ifndef LIBJANSSON_INCLUDE
 #include <jansson.h>
 
-#endif
-
-#ifndef LIBWEBSOCKETS_INCLUDE
 #include <libwebsockets.h>
-
-#endif
 
 #include <sys/time.h>
 
@@ -56,11 +48,8 @@ enum ld_opcode {
     LD_OPCODE_HEARTBEAT_AK = 11
 };
 
-int
-callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user,
-                 void *in, size_t len);
 
-struct ld_sessiondata {
+struct ld_sessiondata { //session data used for connecting to discord, which persists between websocket connections
     char *bot_token;
     char *current_game;
     char *gateway_url;
@@ -73,7 +62,9 @@ struct ld_sessiondata {
 
 };
 
-struct ld_wsdata{ //websocket data-created and destroyed with the websocket
+extern struct ld_sessiondata sd;
+
+struct ld_wsdata{ //websocket data created and destroyed with the websocket
     size_t rx, tx;
     unsigned char buf[LWS_PRE + MAX_DISCORD_PAYLOAD];
     unsigned int len;
@@ -164,3 +155,5 @@ json_t * ld_create_payload_resume ();
 json_t * ld_create_payload_request_members();
 
 json_t * ld_create_payload_guild_sync();
+
+#endif //LIBDISCORD_DISCORD_H
