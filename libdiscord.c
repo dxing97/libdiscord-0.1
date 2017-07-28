@@ -7,16 +7,7 @@
 #include "libdiscord.h"
 #include <ulfius.h>
 
-void ld_hbhandler(struct ld_sessiondata *sd) {
-    //add heartbeat to send queue
-    struct ld_sq_entry *entry;
-    entry = malloc(sizeof(struct ld_sq_entry));
-    entry->payload = ld_create_payload_heartbeat(sd->last_seq_num);
-    TAILQ_INSERT_TAIL(sd->sq, entry, entries);
 
-    //call socket_writable
-    lws_callback_on_writable(sd->wsi);
-}
 
 struct ld_sessiondata *ld_create_sessiondata(struct ld_create_sessiondata_context *context) {
     //returns pointer to sd global variable

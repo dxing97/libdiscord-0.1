@@ -12,7 +12,7 @@
 
 #include "libdiscord.h"
 
-struct ld_sessiondata sd;
+//struct ld_sessiondata sd;
 
 int force_exit = 0; //state - 0 - not connected
 
@@ -20,8 +20,6 @@ void sighandler(int sig) //handle SIGINT for graceful closure of the socket
 {
 	force_exit = 1;
 }
-
-
 
 int main (int argc, char *argv[] ) {
     struct timeval tv; //for heartbeat loop
@@ -65,7 +63,7 @@ int main (int argc, char *argv[] ) {
 
     context = ld_create_lws_context();
 
-    signal(SIGINT, sighandler);
+    signal(SIGALRM, ld_hbhandler);
 
     if(gettimeofday(&tv, NULL) == -1) {
         perror("can't get the time");
@@ -97,6 +95,8 @@ int main (int argc, char *argv[] ) {
                 sd.last_heartbeat =  tv.tv_sec * 1000 + tv.tv_usec / 1000;
                 sd.first_heartbeat = 1;
                 lws_callback_on_writable(wsi);
+            } else {
+                alarm((unsigned int) (sd.heartbeat_interval/1000));
             }
             if(( tv.tv_sec * 1000 + tv.tv_usec / 1000) - (sd.last_heartbeat) > sd.heartbeat_interval ) {
                 //send a heartpeat payload
@@ -108,7 +108,7 @@ int main (int argc, char *argv[] ) {
             }
         }
 
-        lws_service(context, 10);
+        lws_service(context, 50);
     }
 
 bail:

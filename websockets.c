@@ -4,6 +4,17 @@
 
 #include "websockets.h"
 
+void ld_hbhandler(int sig) {
+    //add heartbeat to send queue
+    struct ld_sq_entry *entry;
+    entry = malloc(sizeof(struct ld_sq_entry));
+    entry->payload = ld_create_payload_heartbeat(sd.last_seq_num);
+    TAILQ_INSERT_TAIL(sd.sq, entry, entries);
+
+    //call socket_writable
+    lws_callback_on_writable(sd.wsi);
+}
+
 //FIX THIS MESS
 int
 callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {

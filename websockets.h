@@ -14,7 +14,11 @@
 #include "libdiscord.h"
 #include <libwebsockets.h>
 
-
+/*
+ * called when SIGALRM from ualarm() is sent
+ * creates a heartbeat payload and adds it to the send queue
+ */
+void ld_hbhandler(int sig);
 
 /*
  * the lws user-defined callback for websocket events like client_recieve, client_writable, peer_initiated_close, etc

@@ -152,11 +152,7 @@ struct ld_wsdata{
     enum ld_opcode opcode;
 };
 
-/*
- * called when SIGALRM from ualarm() is sent
- * creates a heartbeat payload and adds it to the send queue
- */
-void ld_hbhandler(struct ld_sessiondata *sd);
+
 
 /*
  * initialize the sessiondata struct based on the context information.
