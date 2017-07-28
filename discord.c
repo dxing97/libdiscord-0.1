@@ -12,14 +12,18 @@
 
 #include "libdiscord.h"
 
-extern int force_exit = 0; //state - 0 - not connected
+struct ld_sessiondata sd;
+
+int force_exit = 0; //state - 0 - not connected
 
 void sighandler(int sig) //handle SIGINT for graceful closure of the socket
 {
 	force_exit = 1;
 }
 
-int main (int argc, char **argv[] ) {
+
+
+int main (int argc, char *argv[] ) {
     struct timeval tv; //for heartbeat loop
 
     memset(&sd, 0, sizeof(sd));
@@ -89,7 +93,7 @@ int main (int argc, char **argv[] ) {
         if(sd.ws_state == LD_WSSTATE_CONNECTED_IDENTIFIED) {
             gettimeofday(&tv, NULL);
             if (sd.first_heartbeat == 0) {
-                sd.ws_state = LD_WSSTATE_SENDING_HEARTBEAT;
+                sd.ws_state = LD_WSSTATE_SENDING_PAYLOAD;
                 sd.last_heartbeat =  tv.tv_sec * 1000 + tv.tv_usec / 1000;
                 sd.first_heartbeat = 1;
                 lws_callback_on_writable(wsi);
@@ -97,7 +101,7 @@ int main (int argc, char **argv[] ) {
             if(( tv.tv_sec * 1000 + tv.tv_usec / 1000) - (sd.last_heartbeat) > sd.heartbeat_interval ) {
                 //send a heartpeat payload
                 //set the sd to sending_heartbeat
-                sd.ws_state = LD_WSSTATE_SENDING_HEARTBEAT;
+                sd.ws_state = LD_WSSTATE_SENDING_PAYLOAD;
                 sd.last_heartbeat =  tv.tv_sec * 1000 + tv.tv_usec / 1000;
 
                 lws_callback_on_writable(wsi);

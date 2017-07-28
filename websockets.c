@@ -6,8 +6,7 @@
 
 //FIX THIS MESS
 int
-callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
-{
+callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
     json_error_t error;
     sd.wsd = (struct ld_wsdata *) user;
     int i = 0;
@@ -18,7 +17,7 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
             for(i = 0; i < (int) len; i++) {
                 printf(" %d: 0x%02X\n", i, (( unsigned char *)in)[i]);
             }
-            printf("close code: %u\n", (( unsigned char *)in)[0] << 8 | (( unsigned char *)in)[1]);
+            printf("close code: %u\n", (unsigned int) (( unsigned char *)in)[0] << 8 | (( unsigned char *)in)[1]);
             break;
         case LWS_CALLBACK_CLOSED:
         case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
@@ -84,9 +83,9 @@ callback_discord(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
             break;
         case LWS_CALLBACK_CLIENT_WRITEABLE:
             printf("CLIENT_WRITABLE callback\n");
-            if (sd.ws_state == LD_WSSTATE_SENDING_HEARTBEAT) {
+            if (sd.ws_state == LD_WSSTATE_SENDING_PAYLOAD) {
                 printf("sending heartbeat\n");
-                i = sprintf((char *) &(sd.wsd->buf[LWS_PRE]), json_dumps(ld_create_payload_heartbeat(sd.last_seq_num), 0));
+                i = sprintf("%s", (char *) &(sd.wsd->buf[LWS_PRE]), json_dumps(ld_create_payload_heartbeat(sd.last_seq_num), 0));
                 if(i <= 0) {
                     fprintf(stderr, "couldn't write JSON payload to buffer");
                     return -1;
@@ -149,7 +148,7 @@ struct lws_protocols protocols[] = { //array of protocols that can be used
         }
 };
 
-const struct lws_extension exts[] = {
+struct lws_extension exts[] = {
         {
                 "permessage-deflate", //built in extension - RFC7629 compression extension
                 lws_extension_callback_pm_deflate,

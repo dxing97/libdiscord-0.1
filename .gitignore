@@ -3,4 +3,5 @@
 .idea/workspace.xml
 cmake-build-debug/
 #test.c
-test-echo2.c
+#test-echo2.c
+#install.sh#

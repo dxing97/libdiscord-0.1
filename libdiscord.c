@@ -7,6 +7,26 @@
 #include "libdiscord.h"
 #include <ulfius.h>
 
+void ld_hbhandler(struct ld_sessiondata *sd) {
+    //add heartbeat to send queue
+    struct ld_sq_entry *entry;
+    entry = malloc(sizeof(struct ld_sq_entry));
+    entry->payload = ld_create_payload_heartbeat(sd->last_seq_num);
+    TAILQ_INSERT_TAIL(sd->sq, entry, entries);
+
+    //call socket_writable
+    lws_callback_on_writable(sd->wsi);
+}
+
+struct ld_sessiondata *ld_create_sessiondata(struct ld_create_sessiondata_context *context) {
+    //returns pointer to sd global variable
+
+    memset(&sd, 0, sizeof(sd)); //set _everything_ to zero
+
+    //init sendqueue
+    TAILQ_INIT(sd.sq);
+}
+
 enum ld_opcode ld_payloadbuf_get_opcode(char *payload, size_t len) {
     json_t *decoded_payload, *opcode;
     json_error_t json_error;
@@ -113,7 +133,6 @@ int ld_payload_hello_get_hb_interval(const char *payload) {
 }
 
 int ld_payload_dispatch_get_seqnum(const char *payload) {
-    int intval;
     json_t *decoded_payload, *seqnum;
     json_error_t error;
 
@@ -296,7 +315,7 @@ struct lws_client_connect_info *ld_create_lws_connect_info(struct lws_context *c
 
 json_t * ld_create_payload_heartbeat(int sequence_number) {
     json_t *payload;
-    json_error_t error;
+//    json_error_t error;
 
     payload = json_object();
     if(payload == NULL) {
